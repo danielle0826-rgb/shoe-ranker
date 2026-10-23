@@ -9,15 +9,34 @@ IMAGE_DIR = "inputs/shoes"
 STRIKES_ALLOWED = 3
 CHOICES_PER_ROUND = 4
 
-# Use wide layout and adjust page boundaries
+# Use wide layout and inject targeted CSS to eliminate spacing and border styles
 st.set_page_config(page_title="Amanda's Shoe Picker", layout="wide")
 
 st.markdown("""
     <style>
         .block-container {
-            padding-top: 2.0rem !important;
+            padding-top: 1.5rem !important;
             padding-bottom: 0rem !important;
             max-width: 95% !important;
+        }
+        /* TARGET ONLY THE SHOE GRID BUTTONS: Remove borders, shadows, and backgrounds */
+        div.shoe-card div[data-testid="stButton"] button {
+            border: none !important;
+            background-color: transparent !important;
+            padding: 0px !important;
+            margin: 0px !important;
+            box-shadow: none !important;
+            width: 100% !important;
+        }
+        /* Add a clean, responsive height profile to the button image */
+        div.shoe-card div[data-testid="stButton"] button img {
+            width: 100% !important;
+            height: 140px !important;
+            object-fit: contain !important;
+        }
+        /* Slight scale feedback when a shoe is tapped */
+        div.shoe-card div[data-testid="stButton"] button:active {
+            transform: scale(0.96) !important;
         }
         div[data-testid="stVerticalBlock"] > div {
             padding-bottom: 0.1rem !important;
@@ -84,21 +103,13 @@ def handle_vote(chosen_img):
     generate_new_round()
 
 
-# --- STREAMLIT NATIVE FRAGMENT INTERCEPTOR ---
-# This captures click mapping adjustments via URL updates smoothly without full browser reloads
-if "vote" in st.query_params:
-    chosen_img = st.query_params["vote"]
-    st.query_params.clear()  # Wipes the cache immediately
-    handle_vote(chosen_img)
-    st.rerun()
-
 if not st.session_state.current_round and not st.session_state.winner:
     generate_new_round()
 
 # -------------------------------------------------------------
 # 3. INTERACTIVE USER INTERFACE DESIGN (THE WIREFRAME)
 # -------------------------------------------------------------
-st.subheader("👟 Amanda's Shoe Picker", divider="orange")
+st.subheader("👑 Amanda's Shoe Picker", divider="orange")
 
 if st.session_state.winner:
     st.balloons()
@@ -122,7 +133,7 @@ else:
 
     current_selection = st.session_state.current_round
 
-    # Enforce an explicit 2x2 grid layout
+    # Explicit 2x2 grid structure
     row1_col1, row1_col2 = st.columns(2, wrap=False)
     row2_col1, row2_col2 = st.columns(2, wrap=False)
     
@@ -133,14 +144,23 @@ else:
             with grid_cols[idx]:
                 img_path = os.path.join(IMAGE_DIR, img_name)
                 
-                # NATIVE NARROW LINK CHANNEL MAP
-                # Passes a silent callback directly into the native st.image tool.
-                # No text buttons, no tiny icons, and displays your images at full size.
-                st.image(
-                    img_path, 
-                    use_container_width=True,
-                    link=f"?vote={img_name}"
-                )
+                # Convert the image to an inline base64 string so it renders perfectly inside the button
+                import base64
+                with open(img_path, "rb") as f:
+                    data = base64.b64encode(f.read()).decode("utf-8")
+                
+                # We place the button inside a specialized container named 'shoe-card'
+                # This allows our top CSS rules to cleanly target and hide the button frame elements
+                with st.container(key=f"card_{idx}"):
+                    st.markdown('<div class="shoe-card">', unsafe_allow_html=True)
+                    st.button(
+                        label=f"![shoe](data:image/png;base64,{data})",
+                        key=f"vote_btn_{img_name}_{idx}",
+                        on_click=handle_vote,
+                        args=(img_name,),
+                        use_container_width=True
+                    )
+                    st.markdown('</div>', unsafe_allow_html=True)
 
     # Tighten footer modules side-by-side
     st.divider()

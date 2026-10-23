@@ -86,7 +86,6 @@ def handle_vote(chosen_img):
 
 if not st.session_state.current_round and not st.session_state.winner:
     generate_new_round()
-
 # -------------------------------------------------------------
 # 3. INTERACTIVE USER INTERFACE DESIGN (THE WIREFRAME)
 # -------------------------------------------------------------
@@ -115,26 +114,24 @@ else:
     current_selection = st.session_state.current_round
 
     # Create an explicit 2x2 grid layout (2 columns per row)
-    # wrap=False forces mobile browsers to keep them side-by-side
     row1_col1, row1_col2 = st.columns(2, wrap=False)
     row2_col1, row2_col2 = st.columns(2, wrap=False)
     
     grid_cols = [row1_col1, row1_col2, row2_col1, row2_col2]
 
-        for idx, img_name in enumerate(current_selection):
+    for idx, img_name in enumerate(current_selection):
         if idx < len(grid_cols):
             with grid_cols[idx]:
                 img_path = os.path.join(IMAGE_DIR, img_name)
                 
-                # We turn the image itself into a giant clickable button!
+                # Render the image itself as a clickable target
                 st.image(
                     img_path, 
                     use_container_width=True,
                     on_click=handle_vote,
                     args=(img_name,),
-                    key=f"img_btn_{img_name}_{idx}" # Unique key required for tracking clicks
+                    key=f"img_btn_{img_name}_{idx}"
                 )
-
 
     # Tighten footer modules side-by-side
     st.divider()
@@ -149,3 +146,4 @@ else:
 
     with footer_right:
         st.info("📺 Nike Kits Ad")
+

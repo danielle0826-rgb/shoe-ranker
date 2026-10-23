@@ -9,15 +9,22 @@ IMAGE_DIR = "inputs/shoes"
 STRIKES_ALLOWED = 3
 CHOICES_PER_ROUND = 4
 
-# Use wide layout and inject CSS to reduce top/bottom page padding
+# Use wide layout and inject CSS to maximize screen space
 st.set_page_config(page_title="Amanda's Shoe Picker", layout="wide")
 
 st.markdown("""
-        <style>
+    <style>
         .block-container {
-            padding-top: 2.0rem !important;
+            padding-top: 1.5rem !important;
             padding-bottom: 0rem !important;
             max-width: 95% !important;
+        }
+        /* Make the column image buttons look like flat clickable tiles */
+        div[data-testid="stButton"] button {
+            border: none !important;
+            background: transparent !important;
+            padding: 0 !important;
+            box-shadow: none !important;
         }
         div[data-testid="stVerticalBlock"] > div {
             padding-bottom: 0.1rem !important;
@@ -86,18 +93,11 @@ def handle_vote(chosen_img):
 
 if not st.session_state.current_round and not st.session_state.winner:
     generate_new_round()
+
 # -------------------------------------------------------------
 # 3. INTERACTIVE USER INTERFACE DESIGN (THE WIREFRAME)
 # -------------------------------------------------------------
 st.subheader("👟 Amanda's Shoe Picker", divider="orange")
-
-# Check for incoming votes from our clickable images via URL parameters
-query_params = st.query_params
-if "vote" in query_params:
-    chosen_img = query_params["vote"]
-    st.query_params.clear()  # Clear parameter so it doesn't loop votes on reload
-    handle_vote(chosen_img)
-    st.rerun()
 
 if st.session_state.winner:
     st.balloons()
@@ -132,20 +132,15 @@ else:
             with grid_cols[idx]:
                 img_path = os.path.join(IMAGE_DIR, img_name)
                 
-                # --- UNIVERSAL TAP-TO-VOTE LINK MAP ---
-                # We read the image and display it via an HTML markdown link wrapper.
-                # When tapped on a phone, it silently reloads the page with ?vote=your_shoe in the URL bar.
-                import base64
-                with open(img_path, "rb") as f:
-                    data = base64.b64encode(f.read()).decode("utf-8")
-                
-                # Render the image inside a clean, clickable anchor link container
-                st.markdown(
-                    f'<a href="?vote={img_name}" target="_self" style="text-decoration: none; display: block; border-radius: 8px; overflow: hidden; border: 2px solid #444; padding: 4px; background-color: #1e1e1e;">'
-                    f'<img src="data:image/png;base64,{data}" style="width: 100%; height: 130px; object-fit: contain; display: block; margin: 0 auto;">'
-                    f'<div style="text-align: center; color: white; background-color: #FF4B4B; padding: 6px; font-weight: bold; font-size: 13px; border-radius: 4px; margin-top: 4px;">Tap to Vote 🎯</div>'
-                    f'</a>',
-                    unsafe_allow_html=True
+                # NATIVE 2x2 CLICKABLE CONTAINER BLOCK
+                # Leverages Streamlit 1.35+ features to use an image directly as the button body
+                st.button(
+                    label="", # Erases text labels completely
+                    key=f"btn_tile_{img_name}_{idx}",
+                    on_click=handle_vote,
+                    args=(img_name,),
+                    use_container_width=True,
+                    icon=img_path # Spreads your shoe image natively over the container click area
                 )
 
     # Tighten footer modules side-by-side

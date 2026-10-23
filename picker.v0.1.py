@@ -91,6 +91,14 @@ if not st.session_state.current_round and not st.session_state.winner:
 # -------------------------------------------------------------
 st.subheader("👟 Amanda's Shoe Picker", divider="orange")
 
+# Check for incoming votes from our clickable images via URL parameters
+query_params = st.query_params
+if "vote" in query_params:
+    chosen_img = query_params["vote"]
+    st.query_params.clear()  # Clear parameter so it doesn't loop votes on reload
+    handle_vote(chosen_img)
+    st.rerun()
+
 if st.session_state.winner:
     st.balloons()
     st.success(f"🏆 We Have a Winner!")
@@ -113,7 +121,7 @@ else:
 
     current_selection = st.session_state.current_round
 
-    # Create an explicit 2x2 grid layout (2 columns per row)
+    # Create an explicit 2x2 grid layout
     row1_col1, row1_col2 = st.columns(2, wrap=False)
     row2_col1, row2_col2 = st.columns(2, wrap=False)
     
@@ -124,16 +132,21 @@ else:
             with grid_cols[idx]:
                 img_path = os.path.join(IMAGE_DIR, img_name)
                 
-                # Use a native button configured to hold the image asset
-                st.button(
-                    label=img_name,  # Hidden text label for assistive accessibility
-                    key=f"img_btn_{img_name}_{idx}",
-                    on_click=handle_vote,
-                    args=(img_name,),
-                    use_container_width=True,
-                    icon=img_path   # Displays your shoe image as the clickable body icon
+                # --- UNIVERSAL TAP-TO-VOTE LINK MAP ---
+                # We read the image and display it via an HTML markdown link wrapper.
+                # When tapped on a phone, it silently reloads the page with ?vote=your_shoe in the URL bar.
+                import base64
+                with open(img_path, "rb") as f:
+                    data = base64.b64encode(f.read()).decode("utf-8")
+                
+                # Render the image inside a clean, clickable anchor link container
+                st.markdown(
+                    f'<a href="?vote={img_name}" target="_self" style="text-decoration: none; display: block; border-radius: 8px; overflow: hidden; border: 2px solid #444; padding: 4px; background-color: #1e1e1e;">'
+                    f'<img src="data:image/png;base64,{data}" style="width: 100%; height: 130px; object-fit: contain; display: block; margin: 0 auto;">'
+                    f'<div style="text-align: center; color: white; background-color: #FF4B4B; padding: 6px; font-weight: bold; font-size: 13px; border-radius: 4px; margin-top: 4px;">Tap to Vote 🎯</div>'
+                    f'</a>',
+                    unsafe_allow_html=True
                 )
-
 
     # Tighten footer modules side-by-side
     st.divider()
@@ -148,4 +161,3 @@ else:
 
     with footer_right:
         st.info("📺 Nike Kits Ad")
-

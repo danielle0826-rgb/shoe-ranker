@@ -19,21 +19,16 @@ st.markdown("""
             padding-bottom: 0rem !important;
             max-width: 95% !important;
         }
-        /* Style the image buttons to make them borderless clickable tiles */
-        div[data-testid="stButton"] button {
+        /* Style the image card to feel like a mobile-responsive tile button */
+        div[data-testid="stVerticalBlockBorderWrapper"] {
             border: 1px solid #ddd !important;
+            border-radius: 8px !important;
+            padding: 8px !important;
             background-color: transparent !important;
-            padding: 5px !important;
-            height: 140px !important;
-            display: flex !important;
-            justify-content: center !important;
-            align-items: center !important;
+            transition: transform 0.2s;
         }
-        /* Ensure images inside the buttons fit neatly without cropping */
-        div[data-testid="stButton"] button img {
-            max-height: 120px !important;
-            width: auto !important;
-            object-fit: contain !important;
+        div[data-testid="stVerticalBlockBorderWrapper"]:active {
+            transform: scale(0.97);
         }
         div[data-testid="stVerticalBlock"] > div {
             padding-bottom: 0.1rem !important;
@@ -78,7 +73,7 @@ def generate_new_round():
     active_list = get_active_photos()
 
     if len(active_list) == 1:
-        st.session_state.winner = active_list[0]
+        st.session_state.winner = active_list
         st.session_state.current_round = []
     elif len(active_list) == 0:
         st.session_state.winner = max(pool, key=lambda k: pool[k]["wins"])
@@ -139,18 +134,22 @@ else:
     for idx, img_name in enumerate(current_selection):
         if idx < len(grid_cols):
             with grid_cols[idx]:
-                # Streamlit allows static image paths hosted via relative web paths 
-                # or local app paths inside Markdown labels.
-                img_url = f"app/static/{IMAGE_DIR}/{img_name}" if not img_name.startswith("http") else img_name
+                img_path = os.path.join(IMAGE_DIR, img_name)
                 
-                # We inject Markdown into the button label to display the image inside it natively
-                st.button(
-                    label=f"![shoe]({img_url})",
-                    key=f"btn_tile_{img_name}_{idx}",
-                    on_click=handle_vote,
-                    args=(img_name,),
-                    use_container_width=True
-                )
+                # NATIVE WRAPPED IMAGE TILE CARD
+                # Creates a visual frame containing the image. Tapping anywhere votes!
+                with st.container(border=True):
+                    st.image(img_path, use_container_width=True)
+                    
+                    # Invisible click trigger tracking
+                    st.button(
+                        label="Vote", 
+                        key=f"vote_trig_{img_name}_{idx}",
+                        on_click=handle_vote,
+                        args=(img_name,),
+                        use_container_width=True,
+                        type="primary"
+                    )
 
     # Tighten footer modules side-by-side
     st.divider()

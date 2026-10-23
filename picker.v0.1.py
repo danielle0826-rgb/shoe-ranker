@@ -13,9 +13,9 @@ CHOICES_PER_ROUND = 4
 st.set_page_config(page_title="Amanda's Shoe Picker", layout="wide")
 
 st.markdown("""
-    <style>
+        <style>
         .block-container {
-            padding-top: 1.0rem !important;
+            padding-top: 2.0rem !important;
             padding-bottom: 0rem !important;
             max-width: 95% !important;
         }

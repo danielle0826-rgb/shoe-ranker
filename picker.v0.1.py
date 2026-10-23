@@ -12,12 +12,28 @@ CHOICES_PER_ROUND = 4
 # Use wide layout and inject CSS to maximize screen space
 st.set_page_config(page_title="Amanda's Shoe Picker", layout="wide")
 
+# This CSS strips away all button borders, backgrounds, and shadows
+# turning Streamlit's native buttons into flat, invisible image frames
 st.markdown("""
     <style>
         .block-container {
-            padding-top: 1.5rem !important;
+            padding-top: 2.0rem !important;
             padding-bottom: 0rem !important;
             max-width: 95% !important;
+        }
+        /* Turn the button container into a clean, flat image click area */
+        div[data-testid="stButton"] button {
+            border: none !important;
+            background-color: transparent !important;
+            padding: 0px !important;
+            margin: 0px !important;
+            box-shadow: none !important;
+            width: 100% !important;
+            height: auto !important;
+        }
+        /* Gentle hover effect to show it is interactive */
+        div[data-testid="stButton"] button:active {
+            transform: scale(0.95) !important;
         }
         div[data-testid="stVerticalBlock"] > div {
             padding-bottom: 0.1rem !important;
@@ -84,22 +100,13 @@ def handle_vote(chosen_img):
     generate_new_round()
 
 
-# --- URL PARAMETER VOTE CAPTURE MODULE ---
-# This listens for the silent background taps triggered when clicking the images
-query_params = st.query_params
-if "vote" in query_params:
-    chosen_img = query_params["vote"]
-    st.query_params.clear()  # Wipes parameter so it doesn't double-vote on refresh
-    handle_vote(chosen_img)
-    st.rerun()
-
 if not st.session_state.current_round and not st.session_state.winner:
     generate_new_round()
 
 # -------------------------------------------------------------
 # 3. INTERACTIVE USER INTERFACE DESIGN (THE WIREFRAME)
 # -------------------------------------------------------------
-st.subheader("👟 Amanda's Shoe Picker", divider="orange")
+st.subheader("👑 Amanda's Shoe Picker", divider="orange")
 
 if st.session_state.winner:
     st.balloons()
@@ -123,7 +130,7 @@ else:
 
     current_selection = st.session_state.current_round
 
-    # Create a 2x2 grid layout
+    # Create an explicit 2x2 grid layout
     row1_col1, row1_col2 = st.columns(2, wrap=False)
     row2_col1, row2_col2 = st.columns(2, wrap=False)
     
@@ -134,17 +141,19 @@ else:
             with grid_cols[idx]:
                 img_path = os.path.join(IMAGE_DIR, img_name)
                 
-                # We convert the file to a base64 data string so it bypasses Streamlit Cloud's broken URL routing
+                # Bypasses URL reloading entirely by using a standard native button 
+                # but rendering a markdown image label inside it
                 import base64
                 with open(img_path, "rb") as f:
                     data = base64.b64encode(f.read()).decode("utf-8")
                 
-                # Render a transparent, clean image tile link card with zero text buttons
-                st.markdown(
-                    f'<a href="?vote={img_name}" target="_self" style="text-decoration: none; display: block; border: 1px solid #ddd; border-radius: 8px; padding: 6px;">'
-                    f'<img src="data:image/png;base64,{data}" style="width: 100%; height: 140px; object-fit: contain; display: block; margin: 0 auto;">'
-                    f'</a>',
-                    unsafe_allow_html=True
+                # A fully transparent native button wrapper holding your file layout string
+                st.button(
+                    label=f"![{img_name}](data:image/png;base64,{data})",
+                    key=f"vote_btn_{img_name}_{idx}",
+                    on_click=handle_vote,
+                    args=(img_name,),
+                    use_container_width=True
                 )
 
     # Tighten footer modules side-by-side

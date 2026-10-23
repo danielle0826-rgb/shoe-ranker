@@ -15,16 +15,25 @@ st.set_page_config(page_title="Amanda's Shoe Picker", layout="wide")
 st.markdown("""
     <style>
         .block-container {
-            padding-top: 1.5rem !important;
+            padding-top: 2.0rem !important;
             padding-bottom: 0rem !important;
             max-width: 95% !important;
         }
-        /* Make the column image buttons look like flat clickable tiles */
+        /* Style the image buttons to make them borderless clickable tiles */
         div[data-testid="stButton"] button {
-            border: none !important;
-            background: transparent !important;
-            padding: 0 !important;
-            box-shadow: none !important;
+            border: 1px solid #ddd !important;
+            background-color: transparent !important;
+            padding: 5px !important;
+            height: 140px !important;
+            display: flex !important;
+            justify-content: center !important;
+            align-items: center !important;
+        }
+        /* Ensure images inside the buttons fit neatly without cropping */
+        div[data-testid="stButton"] button img {
+            max-height: 120px !important;
+            width: auto !important;
+            object-fit: contain !important;
         }
         div[data-testid="stVerticalBlock"] > div {
             padding-bottom: 0.1rem !important;
@@ -130,17 +139,17 @@ else:
     for idx, img_name in enumerate(current_selection):
         if idx < len(grid_cols):
             with grid_cols[idx]:
-                img_path = os.path.join(IMAGE_DIR, img_name)
+                # Streamlit allows static image paths hosted via relative web paths 
+                # or local app paths inside Markdown labels.
+                img_url = f"app/static/{IMAGE_DIR}/{img_name}" if not img_name.startswith("http") else img_name
                 
-                # NATIVE 2x2 CLICKABLE CONTAINER BLOCK
-                # Leverages Streamlit 1.35+ features to use an image directly as the button body
+                # We inject Markdown into the button label to display the image inside it natively
                 st.button(
-                    label="", # Erases text labels completely
+                    label=f"![shoe]({img_url})",
                     key=f"btn_tile_{img_name}_{idx}",
                     on_click=handle_vote,
                     args=(img_name,),
-                    use_container_width=True,
-                    icon=img_path # Spreads your shoe image natively over the container click area
+                    use_container_width=True
                 )
 
     # Tighten footer modules side-by-side

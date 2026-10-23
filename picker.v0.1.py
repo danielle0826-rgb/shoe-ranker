@@ -124,14 +124,16 @@ else:
             with grid_cols[idx]:
                 img_path = os.path.join(IMAGE_DIR, img_name)
                 
-                # Render the image itself as a clickable target
-                st.image(
-                    img_path, 
-                    use_container_width=True,
+                # Use a native button configured to hold the image asset
+                st.button(
+                    label=img_name,  # Hidden text label for assistive accessibility
+                    key=f"img_btn_{img_name}_{idx}",
                     on_click=handle_vote,
                     args=(img_name,),
-                    key=f"img_btn_{img_name}_{idx}"
+                    use_container_width=True,
+                    icon=img_path   # Displays your shoe image as the clickable body icon
                 )
+
 
     # Tighten footer modules side-by-side
     st.divider()

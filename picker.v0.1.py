@@ -105,33 +105,61 @@ if st.session_state.winner:
 # Otherwise, render the active game board
 else:
     active_count = len(get_active_photos())
-    st.write(f"Remaining Shoes Surviving: **{active_count}** / {len(all_images)}")
+    st.markdown(f"<p style='text-align: center; margin-bottom: 5px; margin-top: 0px;'>Remaining Shoes: <b>{active_count}</b> / {len(all_images)}</p>", unsafe_allow_html=True)
 
-    # Build your 2x2 grid layout using Streamlit columns
     current_selection = st.session_state.current_round
 
-    # Top Row
-    col1, col2 = st.columns(2)
-    # Bottom Row
-    col3, col4 = st.columns(2)
-    grid_cols = [col1, col2, col3, col4]
-
+    # 1. ENFORCE A TIGHT 2x2 MOBILE GRID USING FLEXBOX HTML
+    # This builds a flex layout container that fits exactly 2 images per row on phone screens
+    import base64
+    grid_html = '<div style="display: flex; flex-wrap: wrap; justify-content: space-between; gap: 8px; width: 100%;">'
+    
     for idx, img_name in enumerate(current_selection):
-        if idx < len(grid_cols):
-            with grid_cols[idx]:
-                img_path = os.path.join(IMAGE_DIR, img_name)
-                # Render the image inside the grid element
-                st.image(img_path, use_container_width=True)
+        img_path = os.path.join(IMAGE_DIR, img_name)
+        with open(img_path, "rb") as f:
+            data = base64.b64encode(f.read()).decode("utf-8")
+        
+        # Each card takes up exactly 47% width so 2 fit side-by-side perfectly on mobile
+        grid_html += f'''
+        <div style="width: 47%; display: flex; flex-direction: column; align-items: center; background: #1E1E1E; border-radius: 8px; padding: 4px; box-sizing: border-box;">
+            <div style="height: 120px; display: flex; justify-content: center; align-items: center; overflow: hidden;">
+                <img src="data:image/png;base64,{data}" style="max-height: 100%; max-width: 100%; object-fit: contain;">
+            </div>
+            <div style="width: 100%; margin-top: 4px;">
+                <a href="?vote={img_name}&idx={idx}" target="_self" style="text-decoration: none;">
+                    <button style="width: 100%; background-color: #FF4B4B; color: white; border: none; padding: 6px; border-radius: 4px; font-weight: bold; font-size: 12px; cursor: pointer;">
+                        Pick Me! 🎯
+                    </button>
+                </a>
+            </div>
+        </div>
+        '''
+    grid_html += '</div>'
+    st.markdown(grid_html, unsafe_allow_html=True)
 
-                # Render the selection target button directly underneath
-                # Streamlit keys require unique identifiers
-                st.button(
-                    "Pick Me! 🎯",
-                    key=f"btn_{img_name}_{idx}",
-                    on_click=handle_vote,
-                    args=(img_name,),
-                    use_container_width=True
-                )
+    # 2. CAPTURE THE MOBILE CLICK MECHANIC VIA URL QUERY
+    query_params = st.query_params
+    if "vote" in query_params:
+        chosen_img = query_params["vote"]
+        # Immediately clear the URL so it doesn't loop votes on reload
+        st.query_params.clear()
+        handle_vote(chosen_img)
+        st.rerun()
+
+    # 3. TIGHTEN FOOTER MODULES SIDE-BY-SIDE FOR PHONES
+    st.divider()
+    footer_left, footer_right = st.columns(2)
+    
+    with footer_left:
+        with st.expander("💬 Miss a shoe?"):
+            missing_input = st.text_input("Name:", key="missing_shoe_input", label_visibility="collapsed")
+            if st.button("Submit"):
+                if missing_input:
+                    st.success("Logged!")
+
+    with footer_right:
+        st.info("📺 Nike Kits Ad")
+
 
     # The User Feedback Feature Loop
     st.divider()

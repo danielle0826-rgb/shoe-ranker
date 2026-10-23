@@ -15,7 +15,7 @@ st.set_page_config(page_title="Amanda's Shoe Picker", layout="wide")
 st.markdown("""
     <style>
         .block-container {
-            padding-top: 2.0rem !important;
+            padding-top: 1.5rem !important;
             padding-bottom: 0rem !important;
             max-width: 95% !important;
         }
@@ -84,6 +84,15 @@ def handle_vote(chosen_img):
     generate_new_round()
 
 
+# --- URL PARAMETER VOTE CAPTURE MODULE ---
+# This listens for the silent background taps triggered when clicking the images
+query_params = st.query_params
+if "vote" in query_params:
+    chosen_img = query_params["vote"]
+    st.query_params.clear()  # Wipes parameter so it doesn't double-vote on refresh
+    handle_vote(chosen_img)
+    st.rerun()
+
 if not st.session_state.current_round and not st.session_state.winner:
     generate_new_round()
 
@@ -114,7 +123,7 @@ else:
 
     current_selection = st.session_state.current_round
 
-    # Create an explicit 2x2 grid layout
+    # Create a 2x2 grid layout
     row1_col1, row1_col2 = st.columns(2, wrap=False)
     row2_col1, row2_col2 = st.columns(2, wrap=False)
     
@@ -125,16 +134,17 @@ else:
             with grid_cols[idx]:
                 img_path = os.path.join(IMAGE_DIR, img_name)
                 
-                # Render using Streamlit's official local file engine
-                st.image(img_path, use_container_width=True)
+                # We convert the file to a base64 data string so it bypasses Streamlit Cloud's broken URL routing
+                import base64
+                with open(img_path, "rb") as f:
+                    data = base64.b64encode(f.read()).decode("utf-8")
                 
-                # Render clean mini action button directly below it
-                st.button(
-                    "Pick Me! 🎯",
-                    key=f"vote_trig_{img_name}_{idx}",
-                    on_click=handle_vote,
-                    args=(img_name,),
-                    use_container_width=True
+                # Render a transparent, clean image tile link card with zero text buttons
+                st.markdown(
+                    f'<a href="?vote={img_name}" target="_self" style="text-decoration: none; display: block; border: 1px solid #ddd; border-radius: 8px; padding: 6px;">'
+                    f'<img src="data:image/png;base64,{data}" style="width: 100%; height: 140px; object-fit: contain; display: block; margin: 0 auto;">'
+                    f'</a>',
+                    unsafe_allow_html=True
                 )
 
     # Tighten footer modules side-by-side

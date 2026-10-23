@@ -121,21 +121,20 @@ else:
     
     grid_cols = [row1_col1, row1_col2, row2_col1, row2_col2]
 
-    for idx, img_name in enumerate(current_selection):
+        for idx, img_name in enumerate(current_selection):
         if idx < len(grid_cols):
             with grid_cols[idx]:
                 img_path = os.path.join(IMAGE_DIR, img_name)
                 
-                # Display the image using the clean native Streamlit renderer
-                st.image(img_path, use_container_width=True)
-
-                st.button(
-                    "Pick Me! 🎯",
-                    key=f"btn_{img_name}_{idx}",
+                # We turn the image itself into a giant clickable button!
+                st.image(
+                    img_path, 
+                    use_container_width=True,
                     on_click=handle_vote,
                     args=(img_name,),
-                    use_container_width=True
+                    key=f"img_btn_{img_name}_{idx}" # Unique key required for tracking clicks
                 )
+
 
     # Tighten footer modules side-by-side
     st.divider()

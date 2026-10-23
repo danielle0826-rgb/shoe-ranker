@@ -19,17 +19,6 @@ st.markdown("""
             padding-bottom: 0rem !important;
             max-width: 95% !important;
         }
-        /* Style the image card to feel like a mobile-responsive tile button */
-        div[data-testid="stVerticalBlockBorderWrapper"] {
-            border: 1px solid #ddd !important;
-            border-radius: 8px !important;
-            padding: 8px !important;
-            background-color: transparent !important;
-            transition: transform 0.2s;
-        }
-        div[data-testid="stVerticalBlockBorderWrapper"]:active {
-            transform: scale(0.97);
-        }
         div[data-testid="stVerticalBlock"] > div {
             padding-bottom: 0.1rem !important;
         }
@@ -73,7 +62,7 @@ def generate_new_round():
     active_list = get_active_photos()
 
     if len(active_list) == 1:
-        st.session_state.winner = active_list
+        st.session_state.winner = active_list[0]
         st.session_state.current_round = []
     elif len(active_list) == 0:
         st.session_state.winner = max(pool, key=lambda k: pool[k]["wins"])
@@ -136,20 +125,17 @@ else:
             with grid_cols[idx]:
                 img_path = os.path.join(IMAGE_DIR, img_name)
                 
-                # NATIVE WRAPPED IMAGE TILE CARD
-                # Creates a visual frame containing the image. Tapping anywhere votes!
-                with st.container(border=True):
-                    st.image(img_path, use_container_width=True)
-                    
-                    # Invisible click trigger tracking
-                    st.button(
-                        label="Vote", 
-                        key=f"vote_trig_{img_name}_{idx}",
-                        on_click=handle_vote,
-                        args=(img_name,),
-                        use_container_width=True,
-                        type="primary"
-                    )
+                # Render using Streamlit's official local file engine
+                st.image(img_path, use_container_width=True)
+                
+                # Render clean mini action button directly below it
+                st.button(
+                    "Pick Me! 🎯",
+                    key=f"vote_trig_{img_name}_{idx}",
+                    on_click=handle_vote,
+                    args=(img_name,),
+                    use_container_width=True
+                )
 
     # Tighten footer modules side-by-side
     st.divider()

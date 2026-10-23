@@ -15,15 +15,15 @@ st.set_page_config(page_title="Amanda's Shoe Picker", layout="wide")
 st.markdown("""
     <style>
         .block-container {
-            padding-top: 1.5rem !important;
+            padding-top: 1.0rem !important;
             padding-bottom: 0rem !important;
             max-width: 95% !important;
         }
         div[data-testid="stVerticalBlock"] > div {
-            padding-bottom: 0.2rem !important;
+            padding-bottom: 0.1rem !important;
         }
         hr {
-            margin: 0.5rem 0 !important;
+            margin: 0.4rem 0 !important;
         }
     </style>
 """, unsafe_allow_html=True)
@@ -90,18 +90,14 @@ if not st.session_state.current_round and not st.session_state.winner:
 # -------------------------------------------------------------
 # 3. INTERACTIVE USER INTERFACE DESIGN (THE WIREFRAME)
 # -------------------------------------------------------------
-# Using a smaller header style instead of massive st.title
-st.markdown("<h2 style='text-align: center; margin-bottom: 0px;'>👟 The Ultimate Shoe Ranker</h2>",
-            unsafe_allow_html=True)
+st.markdown("<h3 style='text-align: center; margin-bottom: 0px;'>👟 Amanda's Shoe Picker</h3>", unsafe_allow_html=True)
 
 if st.session_state.winner:
     st.balloons()
     st.success(f"🏆 We Have a Winner!")
 
     winner_path = os.path.join(IMAGE_DIR, st.session_state.winner)
-    # Constrain winner image height too
     st.image(winner_path, use_container_width=True, caption=st.session_state.winner)
-
 
     st.markdown("### 🛍️ Ready to Buy?")
     st.button("👉 Click Here to Buy This Winning Pair! (Affiliate Link)")
@@ -114,34 +110,24 @@ if st.session_state.winner:
 
 else:
     active_count = len(get_active_photos())
-    st.markdown(
-        f"<p style='text-align: center; margin-bottom: 10px;'>Remaining Shoes Surviving: <b>{active_count}</b> / {len(all_images)}</p>",
-        unsafe_allow_html=True)
+    st.markdown(f"<p style='text-align: center; margin-bottom: 5px;'>Remaining Shoes: <b>{active_count}</b> / {len(all_images)}</p>", unsafe_allow_html=True)
 
     current_selection = st.session_state.current_round
 
-    # Place all 4 choices in a single horizontal row to maximize vertical space
-    grid_cols = st.columns(4)
+    # Create an explicit 2x2 grid layout (2 columns per row)
+    # wrap=False forces mobile browsers to keep them side-by-side
+    row1_col1, row1_col2 = st.columns(2, wrap=False)
+    row2_col1, row2_col2 = st.columns(2, wrap=False)
+    
+    grid_cols = [row1_col1, row1_col2, row2_col1, row2_col2]
 
     for idx, img_name in enumerate(current_selection):
         if idx < len(grid_cols):
             with grid_cols[idx]:
                 img_path = os.path.join(IMAGE_DIR, img_name)
-
-                # --- FIXED LINE 131 ---
-                # We read the image and display it via an HTML container to force a 220px max height
-                import base64
-
-                with open(img_path, "rb") as f:
-                    data = base64.b64encode(f.read()).decode("utf-8")
-
-                st.markdown(
-                    f'<div style="display: flex; justify-content: center; align-items: center; height: 220px; overflow: hidden; border-radius: 5px;">'
-                    f'<img src="data:image/png;base64,{data}" style="max-height: 100%; max-width: 100%; object-fit: contain;">'
-                    f'</div>',
-                    unsafe_allow_html=True
-                )
-                # -----------------------
+                
+                # Display the image using the clean native Streamlit renderer
+                st.image(img_path, use_container_width=True)
 
                 st.button(
                     "Pick Me! 🎯",
@@ -151,18 +137,16 @@ else:
                     use_container_width=True
                 )
 
-    # Tighten footer modules
+    # Tighten footer modules side-by-side
     st.divider()
-
-    # Use columns to put the missing item form and the ad side-by-side
-    footer_left, footer_right = st.columns([1, 1])
+    footer_left, footer_right = st.columns(2, wrap=False)
 
     with footer_left:
-        with st.expander("💬 Missing a shoe?"):
-            missing_input = st.text_input("Brand/Name:", key="missing_shoe_input")
+        with st.expander("💬 Miss a shoe?"):
+            missing_input = st.text_input("Brand/Name:", key="missing_shoe_input", label_visibility="collapsed")
             if st.button("Submit"):
                 if missing_input:
                     st.success("Logged!")
 
     with footer_right:
-        st.info("📺 **AD:** sponsored cleaning kits at Nike.com")
+        st.info("📺 Nike Kits Ad")

@@ -90,7 +90,7 @@ if not st.session_state.current_round and not st.session_state.winner:
 # -------------------------------------------------------------
 # 3. INTERACTIVE USER INTERFACE DESIGN (THE WIREFRAME)
 # -------------------------------------------------------------
-st.markdown("<h5 style='text-align: center; margin-bottom: 0px; font-size: 18px;'>👟 Amanda's Shoe Picker</h5>", unsafe_allow_html=True)
+st.html("<h5 style='text-align: center; margin: 0; font-size: 1.1rem;'>👟 Amanda's Shoe Picker</h5>")
 
 if st.session_state.winner:
     st.balloons()

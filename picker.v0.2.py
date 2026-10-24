@@ -153,15 +153,18 @@ if not st.session_state.current_round and not st.session_state.winner:
 st.subheader("👑 Amanda's Shoe Picker V0.2", divider="orange")
 
 active_now = get_active_photos()
+
+# Clean string conversions for the winner state
 if len(active_now) == 1 and not st.session_state.winner:
-    st.session_state.winner = active_now
+    st.session_state.winner = active_now[0]
 
 if st.session_state.winner:
     st.balloons()
     st.success(f"🏆 We Have a Winner!")
 
-    winner_path = os.path.join(IMAGE_DIR, st.session_state.winner[0] if isinstance(st.session_state.winner, list) else st.session_state.winner)
-    st.image(winner_path, use_container_width=True, caption=st.session_state.winner[0] if isinstance(st.session_state.winner, list) else st.session_state.winner)
+    w_name = st.session_state.winner[0] if isinstance(st.session_state.winner, list) else st.session_state.winner
+    winner_path = os.path.join(IMAGE_DIR, w_name)
+    st.image(winner_path, use_container_width=True, caption=w_name)
 
     if st.button("Play Again 🔄"):
         del st.session_state.photo_pool
@@ -177,24 +180,18 @@ else:
     # Filter pre-baked round items to clear out shoes that received fatal strikes last turn
     display_round = [item for item in st.session_state.current_round if pool[item['name']]['active']]
     
-    # --- AUTO-REFILL ENGINE FIX ---
-    # If a pre-loaded shoe died, don't leave a blank spot! Refill up to 4 if shoes are available.
-    if len(display_round) < CHOICES_PER_ROUND and active_count >= CHOICES_PER_ROUND:
+    # --- MAX REFILL GUARANTEE ---
+    # Automatically tops off the screen options to match the remaining shoe count
+    target_count = min(CHOICES_PER_ROUND, active_count)
+    if len(display_round) < target_count:
         existing_names = [item['name'] for item in display_round]
-        needed_count = CHOICES_PER_ROUND - len(display_round)
+        needed_count = target_count - len(display_round)
         available_fillers = [img for img in active_now if img not in existing_names]
         
         if len(available_fillers) >= needed_count:
             filler_sample = random.sample(available_fillers, needed_count)
             display_round.extend(build_round_package(filler_sample))
             st.session_state.current_round = display_round
-
-    # Emergency layout fallback if completely empty
-    if not display_round and active_count > 0:
-        count_to_draw = min(CHOICES_PER_ROUND, active_count)
-        chosen_names = random.sample(active_now, count_to_draw)
-        display_round = build_round_package(chosen_names)
-        st.session_state.current_round = display_round
 
     items_in_round = len(display_round)
 
@@ -211,10 +208,8 @@ else:
         row1_col1, row1_col2 = st.columns(2, wrap=False)
         grid_cols = [row1_col1, row1_col2]
     else:
-        # FIXED ARRAY DE-COUPLING ROUTINE
-        # Safely extracts the column block from the list wrapper to prevent TypeErrors
-        row1_col1 = st.columns(1)[0]
-        grid_cols = [row1_col1]
+        row1_col1 = st.columns(1)
+        grid_cols = [row1_col1[0]] # Unbox single columns natively
 
     for idx, item in enumerate(display_round):
         if idx < len(grid_cols):

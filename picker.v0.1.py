@@ -9,16 +9,23 @@ IMAGE_DIR = "inputs/shoes"
 STRIKES_ALLOWED = 3
 CHOICES_PER_ROUND = 4
 
-# Use wide layout and let Streamlit handle responsive scaling natively
+# Use wide layout and inject CSS to maximize screen space
 st.set_page_config(page_title="Amanda's Shoe Picker", layout="wide")
 
-# Simple page boundary cushion overrides
 st.markdown("""
     <style>
         .block-container {
             padding-top: 1.5rem !important;
             padding-bottom: 0rem !important;
             max-width: 95% !important;
+        }
+        /* Style the image container grid cards neatly */
+        div[data-testid="stColumn"] {
+            border: 1px solid #eee !important;
+            border-radius: 8px !important;
+            padding: 10px !important;
+            background-color: transparent !important;
+            box-shadow: 0px 2px 4px rgba(0,0,0,0.05) !important;
         }
         div[data-testid="stVerticalBlock"] > div {
             padding-bottom: 0.1rem !important;
@@ -115,7 +122,7 @@ else:
 
     current_selection = st.session_state.current_round
 
-    # Create a clean native 2x2 grid layout
+    # Explicit 2x2 grid layout
     row1_col1, row1_col2 = st.columns(2, wrap=False)
     row2_col1, row2_col2 = st.columns(2, wrap=False)
     
@@ -126,16 +133,17 @@ else:
             with grid_cols[idx]:
                 img_path = os.path.join(IMAGE_DIR, img_name)
                 
-                # NATIVE STREAMLIT IMAGE BUTTON
-                # This uses Streamlit's official method to display a full-size clickable image tile card.
-                # No custom CSS hacks, no small text containers, and updates instantly.
+                # Render the image natively via file processor path (No Base64 or markdown labels)
+                st.image(img_path, use_container_width=True)
+                
+                # Render a clear selection target button directly underneath the image card box
                 st.button(
-                    label="", 
-                    key=f"vote_tile_{img_name}_{idx}",
+                    "Vote 🎯",
+                    key=f"vote_btn_{img_name}_{idx}",
                     on_click=handle_vote,
                     args=(img_name,),
                     use_container_width=True,
-                    image=img_path  # Modern parameter that natively treats the picture as the button template
+                    type="primary"
                 )
 
     # Tighten footer modules side-by-side

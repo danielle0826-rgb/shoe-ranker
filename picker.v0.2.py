@@ -152,6 +152,11 @@ if not st.session_state.current_round and not st.session_state.winner:
 # -------------------------------------------------------------
 st.subheader("👑 Amanda's Shoe Picker V0.2", divider="orange")
 
+# Double check win criteria right before UI renders to prevent hanging layout states
+active_now = get_active_photos()
+if len(active_now) == 1 and not st.session_state.winner:
+    st.session_state.winner = active_now[0]
+
 if st.session_state.winner:
     st.balloons()
     st.success(f"🏆 We Have a Winner!")
@@ -167,10 +172,21 @@ if st.session_state.winner:
         st.rerun()
 
 else:
-    active_count = len(get_active_photos())
+    active_count = len(active_now)
     st.markdown(f"<p style='text-align: center; margin-bottom: 5px;'>Remaining Shoes: <b>{active_count}</b> / {len(all_images)}</p>", unsafe_allow_html=True)
 
-    items_in_round = len(st.session_state.current_round)
+    # --- CRUCIAL REAL-TIME GHOST FILTER ---
+    # Filter the pre-baked deck to make sure it ONLY displays items that are still active right now!
+    display_round = [item for item in st.session_state.current_round if pool[item['name']]['active']]
+    
+    # Emergency backup: If the pre-loaded items are all dead, instantly fetch fresh ones
+    if not display_round:
+        count_to_draw = min(CHOICES_PER_ROUND, len(active_now))
+        chosen_names = random.sample(active_now, count_to_draw)
+        display_round = build_round_package(chosen_names)
+        st.session_state.current_round = display_round
+
+    items_in_round = len(display_round)
 
     grid_cols = []
     if items_in_round == 4:
@@ -188,7 +204,7 @@ else:
         row1_col1 = st.columns(1)
         grid_cols = [row1_col1]
 
-    for idx, item in enumerate(st.session_state.current_round):
+    for idx, item in enumerate(display_round):
         if idx < len(grid_cols):
             with grid_cols[idx]:
                 st.button(

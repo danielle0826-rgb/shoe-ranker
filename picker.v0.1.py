@@ -9,34 +9,16 @@ IMAGE_DIR = "inputs/shoes"
 STRIKES_ALLOWED = 3
 CHOICES_PER_ROUND = 4
 
-# Use wide layout and inject targeted CSS to eliminate spacing and border styles
+# Use wide layout and let Streamlit handle responsive scaling natively
 st.set_page_config(page_title="Amanda's Shoe Picker", layout="wide")
 
+# Simple page boundary cushion overrides
 st.markdown("""
     <style>
         .block-container {
             padding-top: 1.5rem !important;
             padding-bottom: 0rem !important;
             max-width: 95% !important;
-        }
-        /* TARGET ONLY THE SHOE GRID BUTTONS: Remove borders, shadows, and backgrounds */
-        div.shoe-card div[data-testid="stButton"] button {
-            border: none !important;
-            background-color: transparent !important;
-            padding: 0px !important;
-            margin: 0px !important;
-            box-shadow: none !important;
-            width: 100% !important;
-        }
-        /* Add a clean, responsive height profile to the button image */
-        div.shoe-card div[data-testid="stButton"] button img {
-            width: 100% !important;
-            height: 140px !important;
-            object-fit: contain !important;
-        }
-        /* Slight scale feedback when a shoe is tapped */
-        div.shoe-card div[data-testid="stButton"] button:active {
-            transform: scale(0.96) !important;
         }
         div[data-testid="stVerticalBlock"] > div {
             padding-bottom: 0.1rem !important;
@@ -133,7 +115,7 @@ else:
 
     current_selection = st.session_state.current_round
 
-    # Explicit 2x2 grid structure
+    # Create a clean native 2x2 grid layout
     row1_col1, row1_col2 = st.columns(2, wrap=False)
     row2_col1, row2_col2 = st.columns(2, wrap=False)
     
@@ -144,23 +126,17 @@ else:
             with grid_cols[idx]:
                 img_path = os.path.join(IMAGE_DIR, img_name)
                 
-                # Convert the image to an inline base64 string so it renders perfectly inside the button
-                import base64
-                with open(img_path, "rb") as f:
-                    data = base64.b64encode(f.read()).decode("utf-8")
-                
-                # We place the button inside a specialized container named 'shoe-card'
-                # This allows our top CSS rules to cleanly target and hide the button frame elements
-                with st.container(key=f"card_{idx}"):
-                    st.markdown('<div class="shoe-card">', unsafe_allow_html=True)
-                    st.button(
-                        label=f"![shoe](data:image/png;base64,{data})",
-                        key=f"vote_btn_{img_name}_{idx}",
-                        on_click=handle_vote,
-                        args=(img_name,),
-                        use_container_width=True
-                    )
-                    st.markdown('</div>', unsafe_allow_html=True)
+                # NATIVE STREAMLIT IMAGE BUTTON
+                # This uses Streamlit's official method to display a full-size clickable image tile card.
+                # No custom CSS hacks, no small text containers, and updates instantly.
+                st.button(
+                    label="", 
+                    key=f"vote_tile_{img_name}_{idx}",
+                    on_click=handle_vote,
+                    args=(img_name,),
+                    use_container_width=True,
+                    image=img_path  # Modern parameter that natively treats the picture as the button template
+                )
 
     # Tighten footer modules side-by-side
     st.divider()

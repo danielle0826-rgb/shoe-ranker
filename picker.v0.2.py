@@ -98,7 +98,7 @@ def advance_game_deck():
     active_list = get_active_photos()
 
     if len(active_list) == 1:
-        st.session_state.winner = active_list[0]
+        st.session_state.winner = active_list
         st.session_state.current_round = []
         st.session_state.next_round = []
         return
@@ -152,17 +152,16 @@ if not st.session_state.current_round and not st.session_state.winner:
 # -------------------------------------------------------------
 st.subheader("👑 Amanda's Shoe Picker V0.2", divider="orange")
 
-# Double check win criteria right before UI renders to prevent hanging layout states
 active_now = get_active_photos()
 if len(active_now) == 1 and not st.session_state.winner:
-    st.session_state.winner = active_now[0]
+    st.session_state.winner = active_now
 
 if st.session_state.winner:
     st.balloons()
     st.success(f"🏆 We Have a Winner!")
 
-    winner_path = os.path.join(IMAGE_DIR, st.session_state.winner)
-    st.image(winner_path, use_container_width=True, caption=st.session_state.winner)
+    winner_path = os.path.join(IMAGE_DIR, st.session_state.winner[0] if isinstance(st.session_state.winner, list) else st.session_state.winner)
+    st.image(winner_path, use_container_width=True, caption=st.session_state.winner[0] if isinstance(st.session_state.winner, list) else st.session_state.winner)
 
     if st.button("Play Again 🔄"):
         del st.session_state.photo_pool
@@ -175,13 +174,24 @@ else:
     active_count = len(active_now)
     st.markdown(f"<p style='text-align: center; margin-bottom: 5px;'>Remaining Shoes: <b>{active_count}</b> / {len(all_images)}</p>", unsafe_allow_html=True)
 
-    # --- CRUCIAL REAL-TIME GHOST FILTER ---
-    # Filter the pre-baked deck to make sure it ONLY displays items that are still active right now!
+    # Filter pre-baked round items to clear out shoes that received fatal strikes last turn
     display_round = [item for item in st.session_state.current_round if pool[item['name']]['active']]
     
-    # Emergency backup: If the pre-loaded items are all dead, instantly fetch fresh ones
-    if not display_round:
-        count_to_draw = min(CHOICES_PER_ROUND, len(active_now))
+    # --- AUTO-REFILL ENGINE FIX ---
+    # If a pre-loaded shoe died, don't leave a blank spot! Refill up to 4 if shoes are available.
+    if len(display_round) < CHOICES_PER_ROUND and active_count >= CHOICES_PER_ROUND:
+        existing_names = [item['name'] for item in display_round]
+        needed_count = CHOICES_PER_ROUND - len(display_round)
+        available_fillers = [img for img in active_now if img not in existing_names]
+        
+        if len(available_fillers) >= needed_count:
+            filler_sample = random.sample(available_fillers, needed_count)
+            display_round.extend(build_round_package(filler_sample))
+            st.session_state.current_round = display_round
+
+    # Emergency layout fallback if completely empty
+    if not display_round and active_count > 0:
+        count_to_draw = min(CHOICES_PER_ROUND, active_count)
         chosen_names = random.sample(active_now, count_to_draw)
         display_round = build_round_package(chosen_names)
         st.session_state.current_round = display_round
@@ -201,7 +211,9 @@ else:
         row1_col1, row1_col2 = st.columns(2, wrap=False)
         grid_cols = [row1_col1, row1_col2]
     else:
-        row1_col1 = st.columns(1)
+        # FIXED ARRAY DE-COUPLING ROUTINE
+        # Safely extracts the column block from the list wrapper to prevent TypeErrors
+        row1_col1 = st.columns(1)[0]
         grid_cols = [row1_col1]
 
     for idx, item in enumerate(display_round):

@@ -145,9 +145,19 @@ def handle_vote(chosen_img):
     advance_game_deck()
 
 
-# Initialize decks on fresh launch
+# Initialize decks safely on fresh launch with full base64 packaging
 if not st.session_state.current_round and not st.session_state.winner:
-    advance_game_deck()
+    active_list = get_active_photos()
+    if active_list:
+        count_to_draw = min(CHOICES_PER_ROUND, len(active_list))
+        chosen_names = random.sample(active_list, count_to_draw)
+        # Force the initial boot round to package the base64 data immediately
+        st.session_state.current_round = build_round_package(chosen_names)
+        
+        # Also pre-load the next upcoming round right out of the gate
+        next_names = random.sample(active_list, count_to_draw)
+        st.session_state.next_round = build_round_package(next_names)
+
 
 # -------------------------------------------------------------
 # 3. INTERACTIVE USER INTERFACE DESIGN (THE GAME BOARD)

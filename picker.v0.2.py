@@ -66,7 +66,6 @@ if len(all_images) < CHOICES_PER_ROUND:
     st.error(f"Please place at least {CHOICES_PER_ROUND} images inside the '{IMAGE_DIR}' folder to start the game.")
     st.stop()
 
-# Helper function to convert an image path directly into a base64 string
 def get_b64_image(img_name):
     try:
         path = os.path.join(IMAGE_DIR, img_name)
@@ -79,8 +78,8 @@ if "photo_pool" not in st.session_state:
     st.session_state.photo_pool = {
         img: {"strikes": 0, "wins": 0, "active": True} for img in all_images
     }
-    st.session_state.current_round = []  # Holds list of dicts: [{"name": x, "b64": y}, ...]
-    st.session_state.next_round = []     # Pre-loaded buffer deck
+    st.session_state.current_round = []  
+    st.session_state.next_round = []     
     st.session_state.winner = None
 
 pool = st.session_state.photo_pool
@@ -93,13 +92,11 @@ def get_active_photos():
     return [img for img, data in pool.items() if data["active"]]
 
 def build_round_package(selected_names):
-    """Packages shoe filenames with their base64 string data at the exact same moment"""
     return [{"name": name, "b64": get_b64_image(name)} for name in selected_names]
 
 def advance_game_deck():
     active_list = get_active_photos()
 
-    # Check for game over states
     if len(active_list) == 1:
         st.session_state.winner = active_list[0]
         st.session_state.current_round = []
@@ -111,17 +108,13 @@ def advance_game_deck():
         st.session_state.next_round = []
         return
 
-    # If we have a pre-loaded next round ready, push it to active immediately!
     if st.session_state.next_round:
         st.session_state.current_round = st.session_state.next_round
     else:
-        # Fallback for initial fresh game boot
         count_to_draw = min(CHOICES_PER_ROUND, len(active_list))
         chosen_names = random.sample(active_list, count_to_draw)
         st.session_state.current_round = build_round_package(chosen_names)
 
-    # NOW PRE-LOAD THE SUBSEQUENT ROUND IN THE BACKGROUND
-    # Recalculate what will remain active after this transition
     post_round_active = get_active_photos()
     if len(post_round_active) > 1:
         count_to_draw = min(CHOICES_PER_ROUND, len(post_round_active))
@@ -133,7 +126,6 @@ def advance_game_deck():
 def handle_vote(chosen_img):
     pool[chosen_img]["wins"] += 1
 
-    # Extract just the filenames from the current packaged round to distribute strikes
     current_names = [item["name"] for item in st.session_state.current_round]
     
     for img in current_names:
@@ -145,19 +137,15 @@ def handle_vote(chosen_img):
     advance_game_deck()
 
 
-# Initialize decks safely on fresh launch with full base64 packaging
 if not st.session_state.current_round and not st.session_state.winner:
     active_list = get_active_photos()
     if active_list:
         count_to_draw = min(CHOICES_PER_ROUND, len(active_list))
         chosen_names = random.sample(active_list, count_to_draw)
-        # Force the initial boot round to package the base64 data immediately
         st.session_state.current_round = build_round_package(chosen_names)
         
-        # Also pre-load the next upcoming round right out of the gate
         next_names = random.sample(active_list, count_to_draw)
         st.session_state.next_round = build_round_package(next_names)
-
 
 # -------------------------------------------------------------
 # 3. INTERACTIVE USER INTERFACE DESIGN (THE GAME BOARD)
@@ -182,12 +170,24 @@ else:
     active_count = len(get_active_photos())
     st.markdown(f"<p style='text-align: center; margin-bottom: 5px;'>Remaining Shoes: <b>{active_count}</b> / {len(all_images)}</p>", unsafe_allow_html=True)
 
-    # Render layout columns
-    row1_col1, row1_col2 = st.columns(2, wrap=False)
-    row2_col1, row2_col2 = st.columns(2, wrap=False)
-    grid_cols = [row1_col1, row1_col2, row2_col1, row2_col2]
+    items_in_round = len(st.session_state.current_round)
 
-    # Display the current pre-baked round data packages
+    grid_cols = []
+    if items_in_round == 4:
+        row1_col1, row1_col2 = st.columns(2, wrap=False)
+        row2_col1, row2_col2 = st.columns(2, wrap=False)
+        grid_cols = [row1_col1, row1_col2, row2_col1, row2_col2]
+    elif items_in_round == 3:
+        row1_col1, row1_col2 = st.columns(2, wrap=False)
+        row2_col1, _ = st.columns(2, wrap=False)
+        grid_cols = [row1_col1, row1_col2, row2_col1]
+    elif items_in_round == 2:
+        row1_col1, row1_col2 = st.columns(2, wrap=False)
+        grid_cols = [row1_col1, row1_col2]
+    else:
+        row1_col1 = st.columns(1)
+        grid_cols = [row1_col1]
+
     for idx, item in enumerate(st.session_state.current_round):
         if idx < len(grid_cols):
             with grid_cols[idx]:
@@ -199,7 +199,6 @@ else:
                     use_container_width=True
                 )
 
-    # Footer elements
     st.divider()
     footer_left, footer_right = st.columns(2, wrap=False)
 
